@@ -95,7 +95,7 @@ app.decorate("authenticate", async (request, reply) => {
 	}
 });
 //gestion utilisateur
-usersRoutes(app);
+usersRoutes(app,blacklistedTokens);
 //gestion des jeux
 gamesRoutes(app);
 
