@@ -4,7 +4,7 @@ import {
 	loginUser,
 	registerUser,
 } from "../controllers/users.js";
-export function usersRoutes(app) {
+export function usersRoutes(app, blacklistedTokens ) {
 	app.post("/login", async (request, reply) => {
 		reply.send(await loginUser(request.body, app));
 	}).post(
