@@ -111,39 +111,46 @@ let currentGame = {
     currentPlayer: "X",
     winner: null,
 };
+let gameScores = new Map(); // Store scores for each room
+
 
 app.ready().then(() => {
     app.io.on('connection', (socket) => {
         console.log(`Player connected: ${socket.id}`);
-        const gameScores = new Map(); // Store scores for each room
 
-        // Handle player joining a room
         socket.on('joinRoom', ({ username, roomCode }, callback) => {
             socket.join(roomCode);
             players[socket.id] = { username, roomCode };
+            console.log(`${username} joined room ${roomCode}`);
 
-            // Initialize scores if they don't exist
+            // Initialize or get existing scores
             if (!gameScores.has(roomCode)) {
                 gameScores.set(roomCode, {});
             }
 
             const roomScores = gameScores.get(roomCode);
-            if (!roomScores[username]) {
+            // Only initialize score if it doesn't exist
+            if (roomScores[username] === undefined) {
                 roomScores[username] = 0;
             }
 
             const roomPlayers = Object.values(players).filter(player => player.roomCode === roomCode);
             if (roomPlayers.length === 2) {
                 const [firstPlayer, secondPlayer] = roomPlayers;
+                // Initialize scores for both players if needed
+                if (roomScores[firstPlayer.username] === undefined) {
+                    roomScores[firstPlayer.username] = 0;
+                }
+                if (roomScores[secondPlayer.username] === undefined) {
+                    roomScores[secondPlayer.username] = 0;
+                }
 
-                // Ensure both players have score entries
-                if (!roomScores[firstPlayer.username]) roomScores[firstPlayer.username] = 0;
-                if (!roomScores[secondPlayer.username]) roomScores[secondPlayer.username] = 0;
+                console.log('Current room scores:', roomScores);
 
                 app.io.to(roomCode).emit('gameReady', {
                     firstPlayer: firstPlayer.username,
                     secondPlayer: secondPlayer.username,
-                    scores: roomScores // Send initial scores
+                    scores: roomScores
                 });
                 callback({
                     success: true,
@@ -156,8 +163,6 @@ app.ready().then(() => {
             }
         });
 
-
-
         // Handle player move
         socket.on('makeMove', ({ board, nextPlayer, roomCode }) => {
             console.log('Move made:', board, 'Next player:', nextPlayer);
@@ -168,23 +173,30 @@ app.ready().then(() => {
 
         // Handle game won
         socket.on('gameWon', ({ winner, winningCells, roomCode }) => {
+            console.log('Game won by:', winner, 'Room:', roomCode);
             const roomScores = gameScores.get(roomCode);
-            if (roomScores) {
-                // Increment only the winner's score
-                roomScores[winner] = (roomScores[winner] || 0) + 1;
 
-                // Keep existing scores for other players
-                const currentScores = {...roomScores };
+            if (roomScores) {
+                // Create a copy of current scores
+                const updatedScores = {...roomScores };
+                // Increment only the winner's score
+                updatedScores[winner] = (updatedScores[winner] || 0) + 1;
+                // Update the stored scores
+                gameScores.set(roomCode, updatedScores);
+
+                console.log('Updated scores:', updatedScores);
 
                 // Emit updated scores to both players
-                app.io.to(roomCode).emit('scoreUpdate', currentScores);
+                app.io.to(roomCode).emit('scoreUpdate', updatedScores);
+                app.io.to(roomCode).emit('gameWon', { winner, winningCells });
             }
-            app.io.to(roomCode).emit('gameWon', { winner, winningCells });
         });
 
 
         socket.on('resetGame', ({ roomCode, lastWinner }) => {
             const currentScores = gameScores.get(roomCode) || {};
+            console.log('Reset game, current scores:', currentScores);
+
             app.io.to(roomCode).emit('gameReset', {
                 currentGame: {
                     board: Array(9).fill(null),
@@ -192,7 +204,7 @@ app.ready().then(() => {
                     winner: null
                 },
                 lastWinner,
-                scores: currentScores // Send current scores with reset
+                scores: currentScores
             });
         });
 
