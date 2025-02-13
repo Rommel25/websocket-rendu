@@ -129,7 +129,7 @@ const transporter = nodemailer.createTransport({
 
 // Fonction pour envoyer l'email de vérification
 async function sendVerificationEmail(toEmail) {
-    const verificationLink = `http://localhost:3000/verify-email?email=${toEmail}`;
+    const verificationLink = `https://websocket-rendu.onrender.com/verify-email?email=${toEmail}`;
 
     // Utilisation de MJML pour générer l'email
     const mjmlContent = `

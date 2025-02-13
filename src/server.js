@@ -213,8 +213,8 @@ const start = async() => {
             });
 
         await app.listen({ port: 3000 });
-        console.log("Serveur Fastify lancé sur " + chalk.blue("http://localhost:3000"));
-        console.log(chalk.bgYellow("Accéder à la documentation sur http://localhost:3000/documentation"));
+        console.log("Serveur Fastify lancé sur " + chalk.blue("https://websocket-rendu.onrender.com"));
+        console.log(chalk.bgYellow("Accéder à la documentation sur https://websocket-rendu.onrender.com/documentation"));
     } catch (err) {
         console.log(err);
         process.exit(1);
