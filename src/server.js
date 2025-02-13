@@ -170,16 +170,17 @@ app.ready().then(() => {
 
         // Handle game reset
         // Handle game reset
-        socket.on('resetGame', ({ roomCode, lastWinner }) => { //modified
-            console.log('test')
+        socket.on('resetGame', ({ roomCode, lastWinner, startingPlayer }) => {
             currentGame.board = Array(9).fill(null);
-            // Determine the starting player for the new game
-
             currentGame.winner = null;
             currentGame.currentPlayer = "X";
-            app.io.to(roomCode).emit('gameReset', { currentGame, lastWinner });
-        });
 
+            app.io.to(roomCode).emit('gameReset', {
+                currentGame,
+                lastWinner,
+                startingPlayer
+            });
+        });
 
 
         // Handle player disconnect
