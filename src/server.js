@@ -201,6 +201,8 @@ app.ready().then(() => {
 /**********
  * START SERVER
  **********/
+const port = process.env.PORT || 4000;
+
 const start = async() => {
     try {
         await sequelize
@@ -212,7 +214,7 @@ const start = async() => {
                 console.error("Erreur de synchronisation de la base de données :", error);
             });
 
-        await app.listen({ port: 3000 });
+        await app.listen(port);
         console.log("Serveur Fastify lancé sur " + chalk.blue("https://websocket-rendu.onrender.com"));
         console.log(chalk.bgYellow("Accéder à la documentation sur https://websocket-rendu.onrender.com/documentation"));
     } catch (err) {
