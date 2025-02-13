@@ -193,19 +193,27 @@ app.ready().then(() => {
         });
 
 
-        socket.on('resetGame', ({ roomCode, lastWinner }) => {
-            const currentScores = gameScores.get(roomCode) || {};
-            console.log('Reset game, current scores:', currentScores);
+        socket.on('resetGame', ({ roomCode, lastWinner, startingPlayer }) => {
+            console.log('Reset game requested:', { roomCode, lastWinner, startingPlayer });
 
-            app.io.to(roomCode).emit('gameReset', {
-                currentGame: {
-                    board: Array(9).fill(null),
-                    currentPlayer: "X",
-                    winner: null
-                },
+            const newGame = {
+                board: Array(9).fill(null),
+                currentPlayer: "X",
+                winner: null
+            };
+
+            const currentScores = gameScores.get(roomCode) || {};
+
+            // Determine who starts next based on who won
+            const gameState = {
+                currentGame: newGame,
                 lastWinner,
+                startingPlayer, // This will be used to determine whose turn it is
                 scores: currentScores
-            });
+            };
+
+            console.log('Emitting game reset with state:', gameState);
+            app.io.to(roomCode).emit('gameReset', gameState);
         });
 
 
