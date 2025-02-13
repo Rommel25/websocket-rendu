@@ -121,7 +121,8 @@ app.ready().then(() => {
         socket.on('joinRoom', ({ username, roomCode }, callback) => {
             socket.join(roomCode);
             players[socket.id] = { username, roomCode };
-            console.log(`${username} joined room ${roomCode}`);
+
+            // Initialize scores if they don't exist
             if (!gameScores.has(roomCode)) {
                 gameScores.set(roomCode, {});
             }
@@ -130,18 +131,31 @@ app.ready().then(() => {
             if (!roomScores[username]) {
                 roomScores[username] = 0;
             }
+
             const roomPlayers = Object.values(players).filter(player => player.roomCode === roomCode);
             if (roomPlayers.length === 2) {
                 const [firstPlayer, secondPlayer] = roomPlayers;
+
+                // Ensure both players have score entries
+                if (!roomScores[firstPlayer.username]) roomScores[firstPlayer.username] = 0;
+                if (!roomScores[secondPlayer.username]) roomScores[secondPlayer.username] = 0;
+
                 app.io.to(roomCode).emit('gameReady', {
                     firstPlayer: firstPlayer.username,
-                    secondPlayer: secondPlayer.username
+                    secondPlayer: secondPlayer.username,
+                    scores: roomScores // Send initial scores
                 });
-                callback({ success: true, gameReady: true, firstPlayer: firstPlayer.username });
+                callback({
+                    success: true,
+                    gameReady: true,
+                    firstPlayer: firstPlayer.username,
+                    scores: roomScores
+                });
             } else {
                 callback({ success: true, gameReady: false });
             }
         });
+
 
 
         // Handle player move
@@ -153,32 +167,32 @@ app.ready().then(() => {
         });
 
         // Handle game won
-        socket.on('gameWon', ({ winner, winningCells, roomCode, board }) => {
-            console.log('Game won by:', winner, 'Winning cells:', winningCells);
+        socket.on('gameWon', ({ winner, winningCells, roomCode }) => {
             const roomScores = gameScores.get(roomCode);
             if (roomScores) {
-                // Increment winner's score
+                // Increment only the winner's score
                 roomScores[winner] = (roomScores[winner] || 0) + 1;
 
+                // Keep existing scores for other players
+                const currentScores = {...roomScores };
+
                 // Emit updated scores to both players
-                app.io.to(roomCode).emit("scoreUpdate", roomScores);
+                app.io.to(roomCode).emit('scoreUpdate', currentScores);
             }
-            currentGame.board = board;
-            app.io.to(roomCode).emit('gameWon', { winner, winningCells, board });
+            app.io.to(roomCode).emit('gameWon', { winner, winningCells });
         });
 
 
-        // Handle game reset
-        // Handle game reset
-        socket.on('resetGame', ({ roomCode, lastWinner, startingPlayer }) => {
-            currentGame.board = Array(9).fill(null);
-            currentGame.winner = null;
-            currentGame.currentPlayer = "X";
-
+        socket.on('resetGame', ({ roomCode, lastWinner }) => {
+            const currentScores = gameScores.get(roomCode) || {};
             app.io.to(roomCode).emit('gameReset', {
-                currentGame,
+                currentGame: {
+                    board: Array(9).fill(null),
+                    currentPlayer: "X",
+                    winner: null
+                },
                 lastWinner,
-                startingPlayer
+                scores: currentScores // Send current scores with reset
             });
         });
 
