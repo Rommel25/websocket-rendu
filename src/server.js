@@ -214,7 +214,10 @@ const start = async() => {
                 console.error("Erreur de synchronisation de la base de données :", error);
             });
 
-        await app.listen(port);
+        await app.listen({
+            port: port,
+            host: '0.0.0.0' // This is important for Render
+        });
         console.log("Serveur Fastify lancé sur " + chalk.blue("https://websocket-rendu.onrender.com"));
         console.log(chalk.bgYellow("Accéder à la documentation sur https://websocket-rendu.onrender.com/documentation"));
     } catch (err) {
